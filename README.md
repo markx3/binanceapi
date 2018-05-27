@@ -46,3 +46,6 @@ Inspecting `klines`, you would get:
    ]
 ]
 ```
+
+## More info
+For more info please refer to [Binance Official API Docs](https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md).
