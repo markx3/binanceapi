@@ -2,7 +2,9 @@
 from api import Api
 
 if __name__ == "__main__":
-    api = Api()
+    key = ""
+    secret = ""
+    api = Api(key=key, secret=secret)
     print(api.test_connection())
     print(api.server_time())
     print(api.exchange_info())
@@ -13,3 +15,4 @@ if __name__ == "__main__":
     print(api.daily_stats(symbol="BTCUSDT"))
     print(api.price_ticker(symbol="BTCUSDT"))
     print(api.order_book_ticker(symbol="BTCUSDT"))
+    print(api.open_orders(symbol="TRXBTC"))

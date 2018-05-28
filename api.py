@@ -1,5 +1,9 @@
 """Binance API wrapper."""
 import requests
+import hmac
+import datetime
+import hashlib
+from urllib.parse import urlencode
 
 
 class Base(object):
@@ -10,18 +14,50 @@ class Base(object):
         self.host = "api.binance.com"
 
     def get_api(self, action, params=None):
-        """Default get method"""
+        """Default get method."""
+        headers = {"X-MBX-APIKEY": self.key}
         response = requests.get(
-            "https://%s/api/v1/%s" % (self.host, action), params=params
+            "https://%s/api/v1/%s" % (self.host, action), params=params, headers=headers
         )
         return response.json()
+
+    def get_api_sig(self, action, params=None):
+        """Signature get method."""
+        headers = {"X-MBX-APIKEY": self.key}
+
+        response = requests.get(
+            "https://%s/api/v3/%s" % (self.host, action),
+            params=self.__signature(params),
+            headers=headers,
+        )
+        return response.json()
+
+    def post_api(self, action, params=None):
+        """Default post method."""
+        headers = {"X-MBX-APIKEY": self.key}
+        response = requests.post(
+            "https://%s/api/v3/%s" % (self.host, action),
+            params=self.__signature(params),
+            headers=headers,
+        )
+        return response.json()
+
+    def __signature(self, params):
+        params["timestamp"] = int(datetime.datetime.now().timestamp()) * 1000
+        msg = bytes(urlencode(params), "utf-8")
+        secret = bytes(self.secret, "utf-8")
+        digest = hmac.new(secret, msg, hashlib.sha256).hexdigest()
+        params["signature"] = digest
+        return params
 
 
 class Api(Base):
     """API Class."""
 
-    def __init__(self):
+    def __init__(self, key=None, secret=None):
         """API constructor."""
+        self.key = key
+        self.secret = secret
         Base.__init__(self)
 
     def test_connection(self):
@@ -48,7 +84,7 @@ class Api(Base):
         """Return `limit` historical trades. Can query trades based on ID."""
         # TODO Needs API key!
         params = {"symbol": symbol, "limit": limit, "fromId": fromId}
-        pass
+        return self.get_api("historicalTrades", params)
 
     def agg_trades(
         self, symbol="BTCUSDT", limit=None, fromId=None, startTime=None, endTime=None
@@ -93,3 +129,11 @@ class Api(Base):
     def order_book_ticker(self, symbol="BTCUSDT"):
         """Return best price/quantity on the order book of a symbol."""
         return self.get_api("ticker/bookTicker", {"symbol": symbol})
+
+    def open_orders(self, symbol="BTCUSDT", recvWindow=5000):
+        """Return user's open orders for a symbol. If symbol is not specified,
+        return all open orders.
+        """
+        return self.get_api_sig(
+            "openOrders", {"symbol": symbol, "recvWindow": recvWindow}
+        )
